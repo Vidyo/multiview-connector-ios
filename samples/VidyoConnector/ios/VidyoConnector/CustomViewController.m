@@ -142,7 +142,12 @@ enum VIDYO_CONNECTOR_STATE {
         }
         if (![vc RegisterLocalCameraEventListener:self]) {
             [logger Log:@"RegisterLocalCameraEventListener failed"];
-            
+        }
+        if (![vc RegisterLocalMicrophoneEventListener:self]) {
+            [logger Log:@"RegisterLocalMicrophoneEventListener failed"];
+        }
+        if (![vc RegisterLocalSpeakerEventListener:self]) {
+            [logger Log:@"RegisterLocalSpeakerEventListener failed"];
         }
         if (![vc RegisterRemoteCameraEventListener:self]) {
             [logger Log:@"RegisterRemoteCameraEventListener failed"];
@@ -554,14 +559,15 @@ enum VIDYO_CONNECTOR_STATE {
 }
 
 -(void) OnLocalCameraAdded:(LocalCamera *)localCamera {
-    
+    [logger Log:@"OnLocalCameraAdded"];
 }
 
 -(void) OnLocalCameraRemoved:(LocalCamera *)localCamera {
-    
+    [logger Log:@"OnLocalCameraRemoved"];
 }
 
 -(void) OnLocalCameraSelected:(LocalCamera *)localCamera {
+    [logger Log:@"OnLocalCameraSelected"];
     if (localCamera) {
         dispatch_async(dispatch_get_main_queue(), ^{
             [vc AssignViewToLocalCamera:&localView LocalCamera:localCamera DisplayCropped:true AllowZoom:false];
@@ -571,7 +577,39 @@ enum VIDYO_CONNECTOR_STATE {
 }
 
 -(void) OnLocalCameraStateUpdated:(LocalCamera *)localCamera State:(DeviceState)state {
-    
+    [logger Log:@"OnLocalCameraStateUpdated"];
+}
+
+-(void) OnLocalMicrophoneAdded:(LocalMicrophone*)localMicrophone {
+    [logger Log:@"OnLocalMicrophoneAdded"];
+}
+
+-(void) OnLocalMicrophoneRemoved:(LocalMicrophone*)localMicrophone {
+    [logger Log:@"OnLocalMicrophoneRemoved"];
+}
+
+-(void) OnLocalMicrophoneSelected:(LocalMicrophone*)localMicrophone {
+    [logger Log:@"OnLocalMicrophoneSelected"];
+}
+
+-(void) OnLocalMicrophoneStateUpdated:(LocalMicrophone*)localMicrophone State:(DeviceState)state {
+    [logger Log:@"OnLocalMicrophoneStateUpdated"];
+}
+
+-(void) OnLocalSpeakerAdded:(LocalSpeaker*)localSpeaker {
+    [logger Log:@"OnLocalSpeakerAdded"];
+}
+
+-(void) OnLocalSpeakerRemoved:(LocalSpeaker*)localSpeaker {
+    [logger Log:@"OnLocalSpeakerRemoved"];
+}
+
+-(void) OnLocalSpeakerSelected:(LocalSpeaker*)localSpeaker {
+    [logger Log:@"OnLocalSpeakerSelected"];
+}
+
+-(void) OnLocalSpeakerStateUpdated:(LocalSpeaker*)localSpeaker State:(DeviceState)state {
+    [logger Log:@"OnLocalSpeakerStateUpdated"];
 }
 
 -(void) OnRemoteCameraAdded:(RemoteCamera *)remoteCamera Participant:(Participant *)participant {
