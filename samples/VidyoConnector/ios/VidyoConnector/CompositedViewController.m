@@ -108,7 +108,7 @@ enum VIDYO_CONNECTOR_STATE {
     // Construct the VidyoConnector
     vc = [[Connector alloc] init:(void*)&videoView
                        ViewStyle:CONNECTORVIEWSTYLE_Default
-              RemoteParticipants:16
+              RemoteParticipants:15
                    LogFileFilter:"info@VidyoClient info@VidyoConnector warning"
                      LogFileName:""
                         UserData:0];
@@ -214,9 +214,6 @@ enum VIDYO_CONNECTOR_STATE {
 - (void)appWillTerminate:(NSNotification*)notification {
     // Deregister from any/all notifications.
     [[NSNotificationCenter defaultCenter] removeObserver:self];
-
-    // Set the VidyoConnector to nil so it is garbage collected
-    vc = nil;
 
     // Uninitialize VidyoConnector
     [VidyoClientConnector Uninitialize];
@@ -336,7 +333,7 @@ enum VIDYO_CONNECTOR_STATE {
         [toolbarStatusText setText:statusText];
 
         if (vidyoConnectorState == VC_CONNECTED) {
-            // Disable the toggle toolbar control
+            // Enable the toggle toolbar control
             toggleToolbarView.hidden = NO;
 
             if (!hideConfig) {
@@ -346,8 +343,9 @@ enum VIDYO_CONNECTOR_STATE {
         } else {
             // VidyoConnector is disconnected
             
-            // Activate the toggle toolbar control
+            // Disable the toggle toolbar control and display toolbar in case it is hidden
             toggleToolbarView.hidden = YES;
+            toolbarView.hidden = NO;
             
             // Change image of toggleConnectButton to callStartImage
             [toggleConnectButton setImage:callStartImage forState:UIControlStateNormal];

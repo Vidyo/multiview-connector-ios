@@ -245,9 +245,6 @@ enum VIDYO_CONNECTOR_STATE {
     // Deregister from any/all notifications.
     [[NSNotificationCenter defaultCenter] removeObserver:self];
 
-    // Set the VidyoConnector to nil so it is garbage collected
-    vc = nil;
-
     // Uninitialize VidyoConnector
     [VidyoClientConnector Uninitialize];
 
