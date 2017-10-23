@@ -1,0 +1,30 @@
+#Autosave files
+*~
+
+# Build/test output
+build
+obj
+bin
+test-results
+xcuserdata
+project.xcworkspace
+
+# libraries
+lib
+
+# SDKs acquired from developer.vidyo.io
+VidyoClient-iOSSDK
+
+# Per-user data
+*.DS_Store
+*.userprefs
+*.usertasks
+*.user
+
+# ReSharper
+*_Resharper.*
+*.Resharper
+
+# dotCover
+*.dotCover
+
