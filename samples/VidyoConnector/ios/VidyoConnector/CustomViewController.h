@@ -9,8 +9,8 @@
 #import <UIKit/UIKit.h>
 #import <Lmi/VidyoClient/VidyoConnector_Objc.h>
 
-@interface CustomViewController : UIViewController <UITextFieldDelegate, IConnect, IRegisterLogEventListener, IRegisterLocalCameraEventListener, IRegisterLocalMicrophoneEventListener, IRegisterLocalSpeakerEventListener,
-    IRegisterRemoteCameraEventListener, IRegisterParticipantEventListener>
+@interface CustomViewController : UIViewController <UITextFieldDelegate, VCIConnect, VCIRegisterLogEventListener, VCIRegisterLocalCameraEventListener, VCIRegisterLocalMicrophoneEventListener, VCIRegisterLocalSpeakerEventListener,
+    VCIRegisterRemoteCameraEventListener, VCIRegisterParticipantEventListener>
 
 @property (weak, nonatomic) IBOutlet UITextField *host;
 @property (weak, nonatomic) IBOutlet UITextField *displayName;

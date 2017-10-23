@@ -18,7 +18,7 @@ enum VIDYO_CONNECTOR_STATE {
 
 @interface CompositedViewController () {
 @private
-    Connector *vc;
+    VCConnector *vc;
     Logger    *logger;
     UIImage   *callStartImage;
     UIImage   *callEndImage;
@@ -92,12 +92,11 @@ enum VIDYO_CONNECTOR_STATE {
         allowReconnect   = YES;
         returnURL        = NULL;
     }
-
     // Hide the controls view if hideConfig is enabled
     controlsView.hidden = hideConfig;
 
     // Initialize VidyoConnector
-    [VidyoClientConnector Initialize];
+    [VCConnectorPkg vcInitialize];
 }
 
 - (void)viewWillAppear:(BOOL)animated {
@@ -106,8 +105,8 @@ enum VIDYO_CONNECTOR_STATE {
     [super viewWillAppear:animated];
     
     // Construct the VidyoConnector
-    vc = [[Connector alloc] init:(void*)&videoView
-                       ViewStyle:CONNECTORVIEWSTYLE_Default
+    vc = [[VCConnector alloc] init:(void*)&videoView
+                       ViewStyle:VCConnectorViewStyleDefault
               RemoteParticipants:15
                    LogFileFilter:"info@VidyoClient info@VidyoConnector warning"
                      LogFileName:""
@@ -115,14 +114,14 @@ enum VIDYO_CONNECTOR_STATE {
     
     if (vc) {
         // Set the client version in the toolbar
-        [clientVersion setText:[NSString stringWithFormat:@"v %@", [vc GetVersion]]];
+        [clientVersion setText:[NSString stringWithFormat:@"v %@", [vc getVersion]]];
 
         // If enableDebug is configured then enable debugging
         if (enableDebug) {
-            [vc EnableDebug:7776 LogFilter:"warning info@VidyoClient info@VidyoConnector"];
+            [vc enableDebug:7776 LogFilter:"warning info@VidyoClient info@VidyoConnector"];
         }
         // Register for log callbacks
-        if (![vc RegisterLogEventListener:self Filter:"info@VidyoClient info@VidyoConnector warning"]) {
+        if (![vc registerLogEventListener:self Filter:"info@VidyoClient info@VidyoConnector warning"]) {
             [logger Log:@"RegisterLogEventListener failed"];
         }
         // If configured to auto-join, then simulate a click of the toggle connect button
@@ -147,16 +146,17 @@ enum VIDYO_CONNECTOR_STATE {
     }
 
     // Register for OS notifications about this app running in background/foreground, etc.
+
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(appDidEnterBackground:)
                                                  name:UIApplicationDidEnterBackgroundNotification
                                                object:nil];
-    
+
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(appWillEnterForeground:)
                                                  name:UIApplicationWillEnterForegroundNotification
                                                object:nil];
-    
+
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(appWillTerminate:)
                                                  name:UIApplicationWillTerminateNotification
@@ -204,11 +204,18 @@ enum VIDYO_CONNECTOR_STATE {
 #pragma mark Application Lifecycle
 
 - (void)appDidEnterBackground:(NSNotification*)notification {
-    [vc SetMode:CONNECTORMODE_Background];
+    // Enable camera privacy so remote participants do not see a frozen frame
+    [vc setCameraPrivacy:YES];
+    [vc setMode:VCConnectorModeBackground];
 }
 
 - (void)appWillEnterForeground:(NSNotification*)notification {
-    [vc SetMode:CONNECTORMODE_Foreground];
+    [vc setMode:VCConnectorModeForeground];
+
+    // Check if camera privacy should be disabled
+    if (!cameraPrivacy) {
+        [vc setCameraPrivacy:NO];
+    }
 }
 
 - (void)appWillTerminate:(NSNotification*)notification {
@@ -216,7 +223,7 @@ enum VIDYO_CONNECTOR_STATE {
     [[NSNotificationCenter defaultCenter] removeObserver:self];
 
     // Uninitialize VidyoConnector
-    [VidyoClientConnector Uninitialize];
+    [VCConnectorPkg uninitialize];
 
     // Close the log file
     [logger Close];
@@ -318,7 +325,7 @@ enum VIDYO_CONNECTOR_STATE {
     [logger Log:[NSString stringWithFormat:@"VidyoConnectorShowViewAt: x = %f, y = %f, w = %f, h = %f", videoView.frame.origin.x, videoView.frame.origin.y, videoView.frame.size.width, videoView.frame.size.height]];
 
     // Resize the VidyoConnector
-    [vc ShowViewAt:NULL X:0 Y:0 Width:videoView.frame.size.width Height:videoView.frame.size.height];
+    [vc showViewAt:&videoView X:0 Y:0 Width:videoView.frame.size.width Height:videoView.frame.size.height];
 }
 
 // The state of the VidyoConnector connection changed, reconfigure the UI.
@@ -387,14 +394,14 @@ enum VIDYO_CONNECTOR_STATE {
     if ([toggleConnectButton imageForState:UIControlStateNormal] == callEndImage) {
         [toolbarStatusText setText:@"Disconnecting..."];
 
-        [vc Disconnect];
+        [vc disconnect];
     } else {
         // Abort the Connect call if resourceId is invalid. It cannot contain empty spaces or "@".
         if ( [[resourceId text] containsString:@" "] || [[resourceId text] containsString:@"@"] ) {
             [toolbarStatusText setText:@"Invalid Resource ID"];
         } else {
             [toolbarStatusText setText:@"Connecting..."];
-            BOOL status = [vc Connect:[host.text UTF8String]
+            BOOL status = [vc connect:[host.text UTF8String]
                                 Token:[token.text UTF8String]
                           DisplayName:[displayName.text UTF8String]
                            ResourceId:[resourceId.text UTF8String]
@@ -425,7 +432,7 @@ enum VIDYO_CONNECTOR_STATE {
     } else {
         [microphonePrivacyButton setImage:[UIImage imageNamed:@"microphoneOff.png"] forState:UIControlStateNormal];
     }
-    [vc SetMicrophonePrivacy:microphonePrivacy];
+    [vc setMicrophonePrivacy:microphonePrivacy];
 }
 
 // Toggle the camera privacy
@@ -436,12 +443,12 @@ enum VIDYO_CONNECTOR_STATE {
     } else {
         [cameraPrivacyButton setImage:[UIImage imageNamed:@"cameraOff.png"] forState:UIControlStateNormal];
     }
-    [vc SetCameraPrivacy:cameraPrivacy];
+    [vc setCameraPrivacy:cameraPrivacy];
 }
 
 // Handle the camera swap button being pressed. Cycle the camera.
 - (IBAction)cameraSwapButtonPressed:(id)sender {
-    [vc CycleCamera];
+    [vc cycleCamera];
 }
 
 - (IBAction)toggleToolbar:(UITapGestureRecognizer *)sender {
@@ -452,7 +459,7 @@ enum VIDYO_CONNECTOR_STATE {
 
 - (IBAction)layoutButtonPressed:(id)sender {
     // Disable the VidyoConnector; all devices are released
-    [vc Disable];
+    [vc disable];
     vc = nil;
 
     [self performSegueWithIdentifier:@"segueCompositedToCustom" sender:self];
@@ -462,13 +469,13 @@ enum VIDYO_CONNECTOR_STATE {
 #pragma mark VidyoConnector Event Handlers
 
 //  Handle successful connection.
--(void) OnSuccess {
+-(void) onSuccess {
     [logger Log:@"Successfully connected."];
     [self ConnectorStateUpdated:VC_CONNECTED statusText:@"Connected"];
 }
 
 // Handle attempted connection failure.
--(void) OnFailure:(ConnectorFailReason)reason {
+-(void) onFailure:(VCConnectorFailReason)reason {
     [logger Log:@"Connection attempt failed."];
 
     // Update UI to reflect connection failed
@@ -476,8 +483,8 @@ enum VIDYO_CONNECTOR_STATE {
 }
 
 //  Handle an existing session being disconnected.
--(void) OnDisconnected:(ConnectorDisconnectReason)reason {
-    if (reason == CONNECTORDISCONNECTREASON_Disconnected) {
+-(void) onDisconnected:(VCConnectorDisconnectReason)reason {
+    if (reason == VCConnectorDisconnectReasonDisconnected) {
         [logger Log:@"Succesfully disconnected."];
         [self ConnectorStateUpdated:VC_DISCONNECTED statusText:@"Disconnected"];
     } else {
@@ -487,8 +494,8 @@ enum VIDYO_CONNECTOR_STATE {
 }
 
 // Handle a message being logged.
--(void) OnLog:(LogRecord*)logRecord {
-    [logger LogClientLib:logRecord->message];
+-(void) onLog:(VCLogRecord*)logRecord {
+    [logger LogClientLib:logRecord.message];
 }
 
 @end

@@ -9,7 +9,7 @@
 #import <UIKit/UIKit.h>
 #import <Lmi/VidyoClient/VidyoConnector_Objc.h>
 
-@interface CompositedViewController : UIViewController <UITextFieldDelegate, IConnect, IRegisterLogEventListener>
+@interface CompositedViewController : UIViewController <UITextFieldDelegate, VCIConnect, VCIRegisterLogEventListener>
 
 @property (weak, nonatomic) IBOutlet UITextField *host;
 @property (weak, nonatomic) IBOutlet UITextField *displayName;

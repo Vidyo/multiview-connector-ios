@@ -20,7 +20,7 @@ enum VIDYO_CONNECTOR_STATE {
 
 @interface CustomViewController () {
 @private
-    Connector *vc;
+    VCConnector *vc;
     Logger    *logger;
     UIImage   *callStartImage;
     UIImage   *callEndImage;
@@ -107,12 +107,11 @@ enum VIDYO_CONNECTOR_STATE {
         allowReconnect   = YES;
         returnURL        = NULL;
     }
-
     // Hide the controls view if hideConfig is enabled
     controlsView.hidden = hideConfig;
 
     // Initialize VidyoConnector
-    [VidyoClientConnector Initialize];
+    [VCConnectorPkg vcInitialize];
 }
 
 - (void)viewWillAppear:(BOOL)animated {
@@ -121,38 +120,38 @@ enum VIDYO_CONNECTOR_STATE {
     [super viewWillAppear:animated];
     
     // Construct the VidyoConnector
-    vc = [[Connector alloc] init:nil
-                       ViewStyle:CONNECTORVIEWSTYLE_Default
-              RemoteParticipants:16
+    vc = [[VCConnector alloc] init:nil
+                       ViewStyle:VCConnectorViewStyleDefault
+              RemoteParticipants:15
                    LogFileFilter:"info@VidyoClient info@VidyoConnector warning"
                      LogFileName:""
                         UserData:0];
     
     if (vc) {
         // Set the client version in the toolbar
-        [clientVersion setText:[NSString stringWithFormat:@"v %@", [vc GetVersion]]];
+        [clientVersion setText:[NSString stringWithFormat:@"v %@", [vc getVersion]]];
 
         // If enableDebug is configured then enable debugging
         if (enableDebug) {
-            [vc EnableDebug:7776 LogFilter:"warning info@VidyoClient info@VidyoConnector"];
+            [vc enableDebug:7776 LogFilter:"warning info@VidyoClient info@VidyoConnector"];
         }
         // Register for log callbacks
-        if (![vc RegisterLogEventListener:self Filter:"info@VidyoClient info@VidyoConnector warning"]) {
+        if (![vc registerLogEventListener:self Filter:"info@VidyoClient info@VidyoConnector warning"]) {
             [logger Log:@"RegisterLogEventListener failed"];
         }
-        if (![vc RegisterLocalCameraEventListener:self]) {
+        if (![vc registerLocalCameraEventListener:self]) {
             [logger Log:@"RegisterLocalCameraEventListener failed"];
         }
-        if (![vc RegisterLocalMicrophoneEventListener:self]) {
+        if (![vc registerLocalMicrophoneEventListener:self]) {
             [logger Log:@"RegisterLocalMicrophoneEventListener failed"];
         }
-        if (![vc RegisterLocalSpeakerEventListener:self]) {
+        if (![vc registerLocalSpeakerEventListener:self]) {
             [logger Log:@"RegisterLocalSpeakerEventListener failed"];
         }
-        if (![vc RegisterRemoteCameraEventListener:self]) {
+        if (![vc registerRemoteCameraEventListener:self]) {
             [logger Log:@"RegisterRemoteCameraEventListener failed"];
         }
-        if (![vc RegisterParticipantEventListener:self]) {
+        if (![vc registerParticipantEventListener:self]) {
             [logger Log:@"RegisterParticipantEventListener failed"];
         }
         // If configured to auto-join, then simulate a click of the toggle connect button
@@ -177,16 +176,17 @@ enum VIDYO_CONNECTOR_STATE {
     }
 
     // Register for OS notifications about this app running in background/foreground, etc.
+
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(appDidEnterBackground:)
                                                  name:UIApplicationDidEnterBackgroundNotification
                                                object:nil];
-    
+
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(appWillEnterForeground:)
                                                  name:UIApplicationWillEnterForegroundNotification
                                                object:nil];
-    
+
     [[NSNotificationCenter defaultCenter] addObserver:self
                                              selector:@selector(appWillTerminate:)
                                                  name:UIApplicationWillTerminateNotification
@@ -212,7 +212,7 @@ enum VIDYO_CONNECTOR_STATE {
     [[NSNotificationCenter defaultCenter] removeObserver:self
                                                     name:UIApplicationDidEnterBackgroundNotification
                                                   object:nil];
-    
+
     [[NSNotificationCenter defaultCenter] removeObserver:self
                                                     name:UIApplicationWillEnterForegroundNotification
                                                   object:nil];
@@ -234,11 +234,18 @@ enum VIDYO_CONNECTOR_STATE {
 #pragma mark Application Lifecycle
 
 - (void)appDidEnterBackground:(NSNotification*)notification {
-    [vc SetMode:CONNECTORMODE_Background];
+    // Enable camera privacy so remote participants do not see a frozen frame
+    [vc setCameraPrivacy:YES];
+    [vc setMode:VCConnectorModeBackground];
 }
 
 - (void)appWillEnterForeground:(NSNotification*)notification {
-    [vc SetMode:CONNECTORMODE_Foreground];
+    [vc setMode:VCConnectorModeForeground];
+
+    // Check if camera privacy should be disabled
+    if (!cameraPrivacy) {
+        [vc setCameraPrivacy:NO];
+    }
 }
 
 - (void)appWillTerminate:(NSNotification*)notification {
@@ -246,7 +253,7 @@ enum VIDYO_CONNECTOR_STATE {
     [[NSNotificationCenter defaultCenter] removeObserver:self];
 
     // Uninitialize VidyoConnector
-    [VidyoClientConnector Uninitialize];
+    [VCConnectorPkg uninitialize];
 
     // Close the log file
     [logger Close];
@@ -350,11 +357,11 @@ enum VIDYO_CONNECTOR_STATE {
     [logger Log:[NSString stringWithFormat:@"VidyoConnectorShowViewAt localView: x = %f, y = %f, w = %f, h = %f", localView.frame.origin.x, localView.frame.origin.y, localView.frame.size.width, localView.frame.size.height]];
 
     // Resize the VidyoConnector
-    [vc ShowViewAt:&localView X:0 Y:0 Width:localView.frame.size.width Height:localView.frame.size.height];
+    [vc showViewAt:&localView X:0 Y:0 Width:localView.frame.size.width Height:localView.frame.size.height];
     
     for (int i = 0; i < NUM_REMOTE_SLOTS; ++i) {
         if (![remoteSlots[i] isEqualToString:@"0"]) {
-            [vc ShowViewAt:&remoteView[i] X:0 Y:0 Width:remoteView[i].frame.size.width Height:remoteView[i].frame.size.height];
+            [vc showViewAt:&remoteView[i] X:0 Y:0 Width:remoteView[i].frame.size.width Height:remoteView[i].frame.size.height];
             [logger Log:[NSString stringWithFormat:@"VidyoConnectorShowViewAt remoteView%d: x = %f, y = %f, w = %f, h = %f", i, remoteView[i].frame.origin.x, remoteView[i].frame.origin.y, remoteView[i].frame.size.width, remoteView[i].frame.size.height]];
         }
     }
@@ -372,7 +379,7 @@ enum VIDYO_CONNECTOR_STATE {
         [toolbarStatusText setText:statusText];
 
         if (vidyoConnectorState == VC_CONNECTED) {
-            // Disable the toggle toolbar control
+            // Enable the toggle toolbar control
             toggleToolbarView.hidden = NO;
 
             if (!hideConfig) {
@@ -382,8 +389,9 @@ enum VIDYO_CONNECTOR_STATE {
         } else {
             // VidyoConnector is disconnected
             
-            // Activate the toggle toolbar control
+            // Disable the toggle toolbar control and display toolbar in case it is hidden
             toggleToolbarView.hidden = YES;
+            toolbarView.hidden = NO;
             
             // Change image of toggleConnectButton to callStartImage
             [toggleConnectButton setImage:callStartImage forState:UIControlStateNormal];
@@ -429,17 +437,17 @@ enum VIDYO_CONNECTOR_STATE {
             for (int i = 0; i < NUM_REMOTE_SLOTS; ++i) {
                 if (![remoteSlots[i] isEqualToString:@"0"]) {
                     [remoteSlots[i] setString:@"0"];
-                    [vc HideView:&remoteView[i]];
+                    [vc hideView:&remoteView[i]];
                 }
             }
 
             [self RefreshUI];
         });
 
-        [vc Disconnect];
+        [vc disconnect];
     } else {
         [toolbarStatusText setText:@"Connecting..."];
-        BOOL status = [vc Connect:[host.text UTF8String]
+        BOOL status = [vc connect:[host.text UTF8String]
                             Token:[token.text UTF8String]
                       DisplayName:[displayName.text UTF8String]
                        ResourceId:[resourceId.text UTF8String]
@@ -469,7 +477,7 @@ enum VIDYO_CONNECTOR_STATE {
     } else {
         [microphonePrivacyButton setImage:[UIImage imageNamed:@"microphoneOff.png"] forState:UIControlStateNormal];
     }
-    [vc SetMicrophonePrivacy:microphonePrivacy];
+    [vc setMicrophonePrivacy:microphonePrivacy];
 }
 
 // Toggle the camera privacy
@@ -480,12 +488,12 @@ enum VIDYO_CONNECTOR_STATE {
     } else {
         [cameraPrivacyButton setImage:[UIImage imageNamed:@"cameraOff.png"] forState:UIControlStateNormal];
     }
-    [vc SetCameraPrivacy:cameraPrivacy];
+    [vc setCameraPrivacy:cameraPrivacy];
 }
 
 // Handle the camera swap button being pressed. Cycle the camera.
 - (IBAction)cameraSwapButtonPressed:(id)sender {
-    [vc CycleCamera];
+    [vc cycleCamera];
 }
 
 - (IBAction)toggleToolbar:(UITapGestureRecognizer *)sender {
@@ -496,7 +504,7 @@ enum VIDYO_CONNECTOR_STATE {
 
 - (IBAction)layoutButtonPressed:(id)sender {
     // Disable the VidyoConnector; all devices are released
-    [vc Disable];
+    [vc disable];
     vc = nil;
 
     [self performSegueWithIdentifier:@"segueCustomToComposited" sender:self];
@@ -506,13 +514,13 @@ enum VIDYO_CONNECTOR_STATE {
 #pragma mark VidyoConnector Event Handlers
 
 //  Handle successful connection.
--(void) OnSuccess {
+-(void) onSuccess {
     [logger Log:@"Successfully connected."];
     [self ConnectorStateUpdated:VC_CONNECTED statusText:@"Connected"];
 }
 
 // Handle attempted connection failure.
--(void) OnFailure:(ConnectorFailReason)reason {
+-(void) onFailure:(VCConnectorFailReason)reason {
     [logger Log:@"Connection attempt failed."];
 
     // Update UI to reflect connection failed
@@ -522,7 +530,7 @@ enum VIDYO_CONNECTOR_STATE {
         for (int i = 0; i < NUM_REMOTE_SLOTS; ++i) {
             if (![remoteSlots[i] isEqualToString:@"0"]) {
                 [remoteSlots[i] setString:@"0"];
-                [vc HideView:&remoteView[i]];
+                [vc hideView:&remoteView[i]];
             }
         }
         [self RefreshUI];
@@ -530,8 +538,8 @@ enum VIDYO_CONNECTOR_STATE {
 }
 
 //  Handle an existing session being disconnected.
--(void) OnDisconnected:(ConnectorDisconnectReason)reason {
-    if (reason == CONNECTORDISCONNECTREASON_Disconnected) {
+-(void) onDisconnected:(VCConnectorDisconnectReason)reason {
+    if (reason == VCConnectorDisconnectReasonDisconnected) {
         [logger Log:@"Succesfully disconnected."];
         [self ConnectorStateUpdated:VC_DISCONNECTED statusText:@"Disconnected"];
     } else {
@@ -543,7 +551,7 @@ enum VIDYO_CONNECTOR_STATE {
         for (int i = 0; i < NUM_REMOTE_SLOTS; ++i) {
             if (![remoteSlots[i] isEqualToString:@"0"]) {
                 [remoteSlots[i] setString:@"0"];
-                [vc HideView:&remoteView[i]];
+                [vc hideView:&remoteView[i]];
             }
         }
         [self RefreshUI];
@@ -551,94 +559,94 @@ enum VIDYO_CONNECTOR_STATE {
 }
 
 // Handle a message being logged.
--(void) OnLog:(LogRecord*)logRecord {
-    [logger LogClientLib:logRecord->message];
+-(void) onLog:(VCLogRecord*)logRecord {
+    [logger LogClientLib:logRecord.message];
 }
 
--(void) OnLocalCameraAdded:(LocalCamera *)localCamera {
+-(void) onLocalCameraAdded:(VCLocalCamera *)localCamera {
     [logger Log:@"OnLocalCameraAdded"];
 }
 
--(void) OnLocalCameraRemoved:(LocalCamera *)localCamera {
+-(void) onLocalCameraRemoved:(VCLocalCamera *)localCamera {
     [logger Log:@"OnLocalCameraRemoved"];
 }
 
--(void) OnLocalCameraSelected:(LocalCamera *)localCamera {
+-(void) onLocalCameraSelected:(VCLocalCamera *)localCamera {
     [logger Log:@"OnLocalCameraSelected"];
     if (localCamera) {
         dispatch_async(dispatch_get_main_queue(), ^{
-            [vc AssignViewToLocalCamera:&localView LocalCamera:localCamera DisplayCropped:true AllowZoom:false];
+            [vc assignViewToLocalCamera:&localView LocalCamera:localCamera DisplayCropped:true AllowZoom:false];
             [self RefreshUI];
         });
     }
 }
 
--(void) OnLocalCameraStateUpdated:(LocalCamera *)localCamera State:(DeviceState)state {
+-(void) onLocalCameraStateUpdated:(VCLocalCamera *)localCamera State:(VCDeviceState)state {
     [logger Log:@"OnLocalCameraStateUpdated"];
 }
 
--(void) OnLocalMicrophoneAdded:(LocalMicrophone*)localMicrophone {
+-(void) onLocalMicrophoneAdded:(VCLocalMicrophone*)localMicrophone {
     [logger Log:@"OnLocalMicrophoneAdded"];
 }
 
--(void) OnLocalMicrophoneRemoved:(LocalMicrophone*)localMicrophone {
+-(void) onLocalMicrophoneRemoved:(VCLocalMicrophone*)localMicrophone {
     [logger Log:@"OnLocalMicrophoneRemoved"];
 }
 
--(void) OnLocalMicrophoneSelected:(LocalMicrophone*)localMicrophone {
+-(void) onLocalMicrophoneSelected:(VCLocalMicrophone*)localMicrophone {
     [logger Log:@"OnLocalMicrophoneSelected"];
 }
 
--(void) OnLocalMicrophoneStateUpdated:(LocalMicrophone*)localMicrophone State:(DeviceState)state {
+-(void) onLocalMicrophoneStateUpdated:(VCLocalMicrophone*)localMicrophone State:(VCDeviceState)state {
     [logger Log:@"OnLocalMicrophoneStateUpdated"];
 }
 
--(void) OnLocalSpeakerAdded:(LocalSpeaker*)localSpeaker {
+-(void) onLocalSpeakerAdded:(VCLocalSpeaker*)localSpeaker {
     [logger Log:@"OnLocalSpeakerAdded"];
 }
 
--(void) OnLocalSpeakerRemoved:(LocalSpeaker*)localSpeaker {
+-(void) onLocalSpeakerRemoved:(VCLocalSpeaker*)localSpeaker {
     [logger Log:@"OnLocalSpeakerRemoved"];
 }
 
--(void) OnLocalSpeakerSelected:(LocalSpeaker*)localSpeaker {
+-(void) onLocalSpeakerSelected:(VCLocalSpeaker*)localSpeaker {
     [logger Log:@"OnLocalSpeakerSelected"];
 }
 
--(void) OnLocalSpeakerStateUpdated:(LocalSpeaker*)localSpeaker State:(DeviceState)state {
+-(void) onLocalSpeakerStateUpdated:(VCLocalSpeaker*)localSpeaker State:(VCDeviceState)state {
     [logger Log:@"OnLocalSpeakerStateUpdated"];
 }
 
--(void) OnRemoteCameraAdded:(RemoteCamera *)remoteCamera Participant:(Participant *)participant {
-    [remoteCameras setObject:remoteCamera forKey:[participant GetId]];
-    [remoteCamerasRenderedStatus setObject:[NSNumber numberWithBool:NO] forKey:[participant GetId]];
+-(void) onRemoteCameraAdded:(VCRemoteCamera *)remoteCamera Participant:(VCParticipant *)participant {
+    [remoteCameras setObject:remoteCamera forKey:[participant getId]];
+    [remoteCamerasRenderedStatus setObject:[NSNumber numberWithBool:NO] forKey:[participant getId]];
     
     for (int i = 0; i < NUM_REMOTE_SLOTS; ++i) {
         if ([remoteSlots[i] isEqualToString:@"0"]) {
-            [remoteSlots[i] setString:[participant GetId]];
+            [remoteSlots[i] setString:[participant getId]];
             dispatch_async(dispatch_get_main_queue(), ^{
-                [vc AssignViewToRemoteCamera:&remoteView[i] RemoteCamera:remoteCamera DisplayCropped:true AllowZoom:false];
+                [vc assignViewToRemoteCamera:&remoteView[i] RemoteCamera:remoteCamera DisplayCropped:true AllowZoom:false];
                 [self RefreshUI];
             });
             
-            [remoteCamerasRenderedStatus setObject:[NSNumber numberWithBool:YES] forKey:[participant GetId]];
+            [remoteCamerasRenderedStatus setObject:[NSNumber numberWithBool:YES] forKey:[participant getId]];
             break;
         }
     }
 }
 
--(void) OnRemoteCameraRemoved:(RemoteCamera *)remoteCamera Participant:(Participant *)participant {
+-(void) onRemoteCameraRemoved:(VCRemoteCamera *)remoteCamera Participant:(VCParticipant *)participant {
     dispatch_async(dispatch_get_main_queue(), ^{
     
-    [remoteCameras removeObjectForKey:[participant GetId]];
-    [remoteCamerasRenderedStatus removeObjectForKey:[participant GetId]];
+    [remoteCameras removeObjectForKey:[participant getId]];
+    [remoteCamerasRenderedStatus removeObjectForKey:[participant getId]];
     
     // Scan through the renderer slots and if this participant's camera
     // is being rendered in a slot, then clear the slot and hide the camera.
     for (int i = 0; i < NUM_REMOTE_SLOTS; ++i) {
-        if ([remoteSlots[i] isEqualToString:[participant GetId]]) {
+        if ([remoteSlots[i] isEqualToString:[participant getId]]) {
             [remoteSlots[i] setString:@"0"];
-            [vc HideView:&remoteView[i]];
+            [vc hideView:&remoteView[i]];
             
             // If a remote camera is not rendered in a slot, replace it in the slot that was just cleaered
             for (NSString* participantId in remoteCameras) {
@@ -646,12 +654,12 @@ enum VIDYO_CONNECTOR_STATE {
                     [remoteSlots[i] setString:participantId];
                     
                     //dispatch_async(dispatch_get_main_queue(), ^{
-                    RemoteCamera *r = (RemoteCamera*)[remoteCameras objectForKey:participantId];
-                    [logger Log:[NSString stringWithFormat:@"remoteCamera monitor replace %@ %@", [r GetId], [r GetName]]];
+                    VCRemoteCamera *r = (VCRemoteCamera*)[remoteCameras objectForKey:participantId];
+                    [logger Log:[NSString stringWithFormat:@"remoteCamera monitor replace %@ %@", [r getId], [r getName]]];
                     
-                    [vc AssignViewToRemoteCamera:&remoteView[i] RemoteCamera:r DisplayCropped:true AllowZoom:false];
+                    [vc assignViewToRemoteCamera:&remoteView[i] RemoteCamera:r DisplayCropped:true AllowZoom:false];
                     [self RefreshUI];
-                    [remoteCamerasRenderedStatus setObject:[NSNumber numberWithBool:YES] forKey:[participant GetId]];
+                    [remoteCamerasRenderedStatus setObject:[NSNumber numberWithBool:YES] forKey:[participant getId]];
                     //});
                     break;
                 }
@@ -662,26 +670,26 @@ enum VIDYO_CONNECTOR_STATE {
     });
 }
 
--(void) OnRemoteCameraStateUpdated:(RemoteCamera *)remoteCamera Participant:(Participant *)participant State:(DeviceState)state {}
+-(void) onRemoteCameraStateUpdated:(VCRemoteCamera *)remoteCamera Participant:(VCParticipant *)participant State:(VCDeviceState)state {}
 
--(void) OnParticipantJoined:(Participant *)participant {}
+-(void) onParticipantJoined:(VCParticipant *)participant {}
 
--(void) OnParticipantLeft:(Participant *)participant {}
+-(void) onParticipantLeft:(VCParticipant *)participant {}
 
--(void) OnDynamicParticipantChanged:(NSMutableArray *)participants RemoteCameras:(NSMutableArray *)remoteCameras {}
+-(void) onDynamicParticipantChanged:(NSMutableArray *)participants RemoteCameras:(NSMutableArray *)remoteCameras {}
 
--(void) OnLoudestParticipantChanged:(Participant *)participant AudioOnly:(BOOL)audioOnly {
+-(void) onLoudestParticipantChanged:(VCParticipant *)participant AudioOnly:(BOOL)audioOnly {
     // Check if the loudest speaker is being rendered in one of the slots
     BOOL found = NO;
     for (int i = 0; i < NUM_REMOTE_SLOTS; ++i) {
-        if ([remoteSlots[i] isEqualToString:[participant GetId]]) {
+        if ([remoteSlots[i] isEqualToString:[participant getId]]) {
             found = YES;
             break;
         }
     }
     
     // First check if the participant's camera has been added to the remoteCameras dictionary
-    if ([remoteCameras objectForKey:[participant GetId]] == nil) {
+    if ([remoteCameras objectForKey:[participant getId]] == nil) {
         [logger Log:@"Warning: loudest speaker participant does not have a camera in remoteCameras"];
     } else if (!found) {
         // The loudest speaker is not being rendered in one of the slots so
@@ -691,16 +699,16 @@ enum VIDYO_CONNECTOR_STATE {
         [remoteCamerasRenderedStatus setObject:[NSNumber numberWithBool:NO] forKey:remoteSlots[0]];
         
         dispatch_async(dispatch_get_main_queue(), ^{
-            [vc AssignViewToRemoteCamera:&remoteView0 RemoteCamera:[remoteCameras objectForKey:[participant GetId]] DisplayCropped:YES AllowZoom:NO];
+            [vc assignViewToRemoteCamera:&remoteView0 RemoteCamera:[remoteCameras objectForKey:[participant getId]] DisplayCropped:YES AllowZoom:NO];
             [self RefreshUI];
         });
 
         // Assign slot 0 to the the loudest speaker's participant id
-        [remoteSlots[0] setString:[participant GetId]];
+        [remoteSlots[0] setString:[participant getId]];
         
         // Set the RenderedStatus flag to YES of the remote camera which has now been rendered
-        [remoteCamerasRenderedStatus setObject:[NSNumber numberWithBool:YES] forKey:[participant GetId]];
-        [logger Log:[NSString stringWithFormat:@"AssignViewToRemoteCamera %@ to slot 0", [participant GetId]]];
+        [remoteCamerasRenderedStatus setObject:[NSNumber numberWithBool:YES] forKey:[participant getId]];
+        [logger Log:[NSString stringWithFormat:@"AssignViewToRemoteCamera %@ to slot 0", [participant getId]]];
     }
 }
 

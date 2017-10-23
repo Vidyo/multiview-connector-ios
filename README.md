@@ -10,7 +10,7 @@ git clone https://github.com/Vidyo/multiview-connector-ios.git
 1. Download the latest Vidyo.io iOS SDK package: https://static.vidyo.io/latest/package/VidyoClient-iOSSDK.zip
 2. Copy the framework located at VidyoClient-iOSSDK/lib/ios/VidyoClientIOS.framework to the lib/ios directory under where this repository was cloned.
 
-> Note: VidyoClientIOS.framework is available in SDK versions 4.1.5.x and later.
+> Note: VidyoClient SDK version 4.1.17.5 or greater is required.
 > The version of the SDK that you are acquiring is highlighted in the blue box here: https://developer.vidyo.io/documentation/latest
 
 ## Build and Run Application
@@ -20,5 +20,3 @@ git clone https://github.com/Vidyo/multiview-connector-ios.git
 4. Build and run the application on the iOS device.
 5. The layout that you are currently using is displayed in blue in the center of the screen: either "Custom Layout" or "Composited Layout". You can switch between layouts by clicking on that text.
 
-## Known Problems
-1. When running with SDK 4.1.11.4 and lower, updating the form (host, resource, etc) after switching between custom and composited layout views may cause a crash.
