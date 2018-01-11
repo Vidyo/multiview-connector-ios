@@ -9,13 +9,6 @@
 #import "CompositedViewController.h"
 #import "Logger.h"
 
-enum VIDYO_CONNECTOR_STATE {
-    VC_CONNECTED,
-    VC_DISCONNECTED,
-    VC_DISCONNECTED_UNEXPECTED,
-    VC_CONNECTION_FAILURE
-};
-
 @interface CompositedViewController () {
 @private
     VCConnector *vc;
@@ -30,7 +23,7 @@ enum VIDYO_CONNECTOR_STATE {
     BOOL      enableDebug;
     NSString  *returnURL;
     NSMutableDictionary *inputParameters;
-    enum VIDYO_CONNECTOR_STATE vidyoConnectorState;
+    enum VidyoConnectorState vidyoConnectorState;
     CGFloat   keyboardOffset;
 }
 @end
@@ -54,7 +47,7 @@ enum VIDYO_CONNECTOR_STATE {
     [logger Log:@"CompositedViewController::viewDidLoad called."];
     
     // Initialize the member variables
-    vidyoConnectorState = VC_DISCONNECTED;
+    vidyoConnectorState = VidyoConnectorStateDisconnected;
     microphonePrivacy = NO;
     cameraPrivacy = NO;
 
@@ -94,9 +87,6 @@ enum VIDYO_CONNECTOR_STATE {
     }
     // Hide the controls view if hideConfig is enabled
     controlsView.hidden = hideConfig;
-
-    // Initialize VidyoConnector
-    [VCConnectorPkg vcInitialize];
 }
 
 - (void)viewWillAppear:(BOOL)animated {
@@ -331,7 +321,7 @@ enum VIDYO_CONNECTOR_STATE {
 // The state of the VidyoConnector connection changed, reconfigure the UI.
 // If connected, show the video in the entire window.
 // If disconnected, show the video in the preview pane.
-- (void)ConnectorStateUpdated:(enum VIDYO_CONNECTOR_STATE)state statusText:(NSString *)statusText {
+- (void)ConnectorStateUpdated:(enum VidyoConnectorState)state statusText:(NSString *)statusText {
     vidyoConnectorState = state;
     
     // Execute this code on the main thread since it is updating the UI layout
@@ -339,7 +329,7 @@ enum VIDYO_CONNECTOR_STATE {
         // Set the status text in the toolbar
         [toolbarStatusText setText:statusText];
 
-        if (vidyoConnectorState == VC_CONNECTED) {
+        if (vidyoConnectorState == VidyoConnectorStateConnected) {
             // Enable the toggle toolbar control
             toggleToolbarView.hidden = NO;
 
@@ -360,11 +350,11 @@ enum VIDYO_CONNECTOR_STATE {
             // If a return URL was provided as an input parameter, then return to that application
             if (returnURL) {
                 // Provide a callstate of either 0 or 1, depending on whether the call was successful
-                [[UIApplication sharedApplication] openURL:[NSURL URLWithString:[NSString stringWithFormat:@"%@?callstate=%d", returnURL, (int)(vidyoConnectorState == VC_DISCONNECTED)]]];
+                [[UIApplication sharedApplication] openURL:[NSURL URLWithString:[NSString stringWithFormat:@"%@?callstate=%d", returnURL, (int)(vidyoConnectorState == VidyoConnectorStateDisconnected)]]];
             }
             // If the allow-reconnect flag is set to false and a normal (non-failure) disconnect occurred,
             // then disable the toggle connect button, in order to prevent reconnection.
-            if (!allowReconnect && (vidyoConnectorState == VC_DISCONNECTED)) {
+            if (!allowReconnect && (vidyoConnectorState == VidyoConnectorStateDisconnected)) {
                 [toggleConnectButton setEnabled:NO];
                 [toolbarStatusText setText:@"Call ended"];
             }
@@ -405,10 +395,10 @@ enum VIDYO_CONNECTOR_STATE {
                                 Token:[token.text UTF8String]
                           DisplayName:[displayName.text UTF8String]
                            ResourceId:[resourceId.text UTF8String]
-                              Connect:self];
+                              ConnectorIConnect:self];
             
             if (status == NO) {
-                [self ConnectorStateUpdated:VC_CONNECTION_FAILURE statusText:@"Connection failed"];
+                [self ConnectorStateUpdated:VidyoConnectorStateFailure statusText:@"Connection failed"];
             } else {
                 // Change image of toggleConnectButton to callEndImage
                 [toggleConnectButton setImage:callEndImage forState:UIControlStateNormal];
@@ -452,7 +442,7 @@ enum VIDYO_CONNECTOR_STATE {
 }
 
 - (IBAction)toggleToolbar:(UITapGestureRecognizer *)sender {
-    if (vidyoConnectorState == VC_CONNECTED) {
+    if (vidyoConnectorState == VidyoConnectorStateConnected) {
         toolbarView.hidden = !toolbarView.hidden;
     }
 }
@@ -471,7 +461,7 @@ enum VIDYO_CONNECTOR_STATE {
 //  Handle successful connection.
 -(void) onSuccess {
     [logger Log:@"Successfully connected."];
-    [self ConnectorStateUpdated:VC_CONNECTED statusText:@"Connected"];
+    [self ConnectorStateUpdated:VidyoConnectorStateConnected statusText:@"Connected"];
 }
 
 // Handle attempted connection failure.
@@ -479,17 +469,17 @@ enum VIDYO_CONNECTOR_STATE {
     [logger Log:@"Connection attempt failed."];
 
     // Update UI to reflect connection failed
-    [self ConnectorStateUpdated:VC_CONNECTION_FAILURE statusText:@"Connection failed"];
+    [self ConnectorStateUpdated:VidyoConnectorStateFailure statusText:@"Connection failed"];
 }
 
 //  Handle an existing session being disconnected.
 -(void) onDisconnected:(VCConnectorDisconnectReason)reason {
     if (reason == VCConnectorDisconnectReasonDisconnected) {
         [logger Log:@"Succesfully disconnected."];
-        [self ConnectorStateUpdated:VC_DISCONNECTED statusText:@"Disconnected"];
+        [self ConnectorStateUpdated:VidyoConnectorStateDisconnected statusText:@"Disconnected"];
     } else {
         [logger Log:@"Unexpected disconnection."];
-        [self ConnectorStateUpdated:VC_DISCONNECTED_UNEXPECTED statusText:@"Unexepected disconnection"];
+        [self ConnectorStateUpdated:VidyoConnectorStateDisconnectedUnexpected statusText:@"Unexepected disconnection"];
     }
 }
 

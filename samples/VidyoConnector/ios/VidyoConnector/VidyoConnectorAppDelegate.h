@@ -8,6 +8,13 @@
 
 #import <UIKit/UIKit.h>
 
+enum VidyoConnectorState {
+    VidyoConnectorStateConnected,
+    VidyoConnectorStateDisconnected,
+    VidyoConnectorStateDisconnectedUnexpected,
+    VidyoConnectorStateFailure
+};
+
 @interface VidyoConnectorAppDelegate : UIResponder <UIApplicationDelegate> {
 }
 

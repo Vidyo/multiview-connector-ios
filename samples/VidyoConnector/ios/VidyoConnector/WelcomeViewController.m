@@ -6,6 +6,7 @@
 
 #import "VidyoConnectorAppDelegate.h"
 #import "WelcomeViewController.h"
+#import <Lmi/VidyoClient/VidyoConnector_Objc.h>
 
 @interface WelcomeViewController ()
 
@@ -33,6 +34,9 @@
         NSUserDefaults *standardUserDefaults = [NSUserDefaults standardUserDefaults];
         customLayout = [[standardUserDefaults stringForKey:@"customLayout"] isEqualToString:@"1"];
     }
+
+    // Initialize VidyoClient Library
+    [VCConnectorPkg vcInitialize];
 
     // Navigate to either the CompositedViewController or CustomViewController
     if (customLayout) {
