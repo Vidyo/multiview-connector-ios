@@ -20,16 +20,16 @@
 
     // If launched by a different app, then segue immediately.
 	// ...In other words, if not launched by a different app, then delay the segue.
-    if (nil == [(VidyoConnectorAppDelegate *)[[UIApplication sharedApplication] delegate] inputParameters]) {
+    NSMutableDictionary *urlParameters = [(VidyoConnectorAppDelegate *)[[UIApplication sharedApplication] delegate] urlParameters];
+    if (nil == urlParameters) {
         [NSThread sleepForTimeInterval:1.0];
     }
 
     // Load the configuration parameters either from the user defaults or the input parameters
-    NSMutableDictionary *inputParameters = [(VidyoConnectorAppDelegate *)[[UIApplication sharedApplication] delegate] inputParameters];
     BOOL customLayout = NO;
 
-    if (inputParameters) {
-        customLayout = [[inputParameters objectForKey:@"customLayout"] isEqualToString:@"1"];
+    if (urlParameters) {
+        customLayout = [[urlParameters objectForKey:@"customLayout"] isEqualToString:@"1"];
     } else {
         NSUserDefaults *standardUserDefaults = [NSUserDefaults standardUserDefaults];
         customLayout = [[standardUserDefaults stringForKey:@"customLayout"] isEqualToString:@"1"];

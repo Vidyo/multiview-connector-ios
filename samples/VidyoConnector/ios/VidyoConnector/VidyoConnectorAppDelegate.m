@@ -8,11 +8,11 @@
 
 @implementation VidyoConnectorAppDelegate
 
-@synthesize inputParameters;
+@synthesize urlParameters;
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
 
-    inputParameters = NULL;
+    urlParameters = nil;
 
     // Register the application default settings from the Settings.bundle to the NSUserDefaults object.
     // Here, the user defaults are loaded only the first time the app is loaded and run.
@@ -53,7 +53,7 @@
     NSLog(@"URL scheme:%@", [url scheme]);
     NSLog(@"URL query: %@", [url query]);
     
-    inputParameters = [[NSMutableDictionary alloc] initWithCapacity:10];
+    urlParameters = [[NSMutableDictionary alloc] initWithCapacity:10];
 
     // Parse the query input and register the pairs to the inputParameters dictionary
 
@@ -63,11 +63,15 @@
         NSArray  *elements = [pair componentsSeparatedByString:@"="];
         NSString *key = [[elements objectAtIndex:0] stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
         NSString *val = [[elements objectAtIndex:1] stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
-    
+
         // Add the input param to the dictionary
-        [inputParameters setObject:val forKey:key];
-        NSLog(@"Updating input parameter dictionary: key = %@, value = %@", key, val);
+        [urlParameters setObject:val forKey:key];
+        NSLog(@"Updating url parameter dictionary: key = %@, value = %@", key, val);
     }
+
+    // Notify the VidyoViewController of the URL event
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"handleGetURLEvent" object:nil];
+
     return YES;
 }
 

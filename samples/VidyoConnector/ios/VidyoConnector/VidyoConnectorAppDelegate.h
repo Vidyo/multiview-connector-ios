@@ -9,10 +9,13 @@
 #import <UIKit/UIKit.h>
 
 enum VidyoConnectorState {
+    VidyoConnectorStateConnecting,
     VidyoConnectorStateConnected,
+    VidyoConnectorStateDisconnecting,
     VidyoConnectorStateDisconnected,
     VidyoConnectorStateDisconnectedUnexpected,
-    VidyoConnectorStateFailure
+    VidyoConnectorStateFailure,
+    VidyoConnectorStateFailureInvalidResource
 };
 
 @interface VidyoConnectorAppDelegate : UIResponder <UIApplicationDelegate> {
@@ -20,7 +23,7 @@ enum VidyoConnectorState {
 
 @property (strong, nonatomic) UIWindow *window;
 
-@property (strong, nonatomic) NSMutableDictionary *inputParameters;
+@property (strong, nonatomic) NSMutableDictionary *urlParameters;
 
 @end
 
