@@ -1,10 +1,10 @@
-# multiview-connector-ios
+# vidyo.io-multiview-connector-ios
 Vidyo.io iOS app featuring ability to switch between composited and custom layouts. This app highlights some important items which are not found in the standard VidyoConnector iOS app (found here: https://developer.vidyo.io/packages) :
 1. How to create a custom layout video chat. The custom layout view controller has 4 views - 1 for the local camera (preview) and 3 for cameras of remote participants.
 2. How to properly release a Connector object when switching between view controllers.
 
 ## Clone Repository
-git clone https://github.com/Vidyo/multiview-connector-ios.git
+git clone https://github.com/Vidyo/vidyo.io-multiview-connector-ios.git
 
 ## Acquire Framework
 1. Download the latest Vidyo.io iOS SDK package: https://static.vidyo.io/latest/package/VidyoClient-iOSSDK.zip
