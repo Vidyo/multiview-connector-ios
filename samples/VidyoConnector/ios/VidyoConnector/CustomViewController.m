@@ -776,7 +776,7 @@
 
 -(void) onParticipantLeft:(VCParticipant *)participant {}
 
--(void) onDynamicParticipantChanged:(NSMutableArray *)participants RemoteCameras:(NSMutableArray *)remoteCameras {}
+-(void) onDynamicParticipantChanged:(NSMutableArray *)participants {}
 
 -(void) onLoudestParticipantChanged:(VCParticipant *)participant AudioOnly:(BOOL)audioOnly {
     // Check if the loudest speaker is being rendered in one of the slots
